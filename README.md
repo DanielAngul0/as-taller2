@@ -1,3 +1,8 @@
+## Autor
+### Estudiante: Daniel Andres Angulo Perez
+
+## [@DanielAngul0](https://github.com/DanielAngul0)
+
 # taller #2 de Arquitectura de Software: MVC
 
 ## Descripción
@@ -15,6 +20,11 @@ Este proyecto proporciona una plantilla para la implementación de una aplicaci�
 4. **Aplicar principios de separación de responsabilidades** y organización de código
 5. **Comprender el flujo de una petición HTTP** dentro de una aplicación web MVC
 6. **Desarrollar una aplicación básica** con persistencia, interfaz web y lógica de negocio estructurada
+## Autor
+### Estudiante: Daniel Andres Angulo Perez
+
+## [@DanielAngul0](https://github.com/DanielAngul0)
+
 
 ## Estructura del Proyecto
 
