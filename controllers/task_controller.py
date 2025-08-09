@@ -34,16 +34,34 @@ def register_routes(app):
     def task_list():
         """
         Muestra la lista de todas las tareas
-        
+
         Query Parameters:
             filter (str): Filtro para mostrar tareas ('all', 'pending', 'completed')
             sort (str): Ordenamiento ('date', 'title', 'created')
-        
+
         Returns:
             str: HTML renderizado con la lista de tareas
         """
-        pass # TODO: implementar el método
-    
+        # TODO: Implementar en Versión 1
+        # Obtener parámetros de filtro y ordenamiento
+        filter_type = request.args.get('filter', 'all')
+        sort_by = request.args.get('sort', 'created')
+
+        # Por ahora, solo mostrar una lista vacía
+        tasks = []
+
+        # Datos para pasar a la plantilla
+        context = {
+            'tasks': tasks,
+            'filter_type': filter_type,
+            'sort_by': sort_by,
+            'total_tasks': len(tasks),
+            'pending_count': 0,
+            'completed_count': 0
+        }
+
+        return render_template('task_list.html', **context)
+ 
     
     @app.route('/tasks/new', methods=['GET', 'POST'])
     def task_create():

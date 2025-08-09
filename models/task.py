@@ -46,12 +46,20 @@ class Task(db.Model):
     def to_dict(self):
         """
         Convierte el objeto Task a un diccionario
-        
+
         Returns:
             dict: Diccionario con los datos de la tarea
         """
-        pass # TODO: implementar el método
-    
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'completed': self.completed,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
     def is_overdue(self):
         """
         Verifica si la tarea está vencida
