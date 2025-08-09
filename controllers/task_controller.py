@@ -75,10 +75,16 @@ def register_routes(app):
             str: HTML del formulario o redirección tras crear la tarea
         """
         if request.method == 'POST':
-            pass # TODO: implementar para una solicitud POST
+        #     pass # TODO: implementar para una solicitud POST
         
-        # Mostrar formulario de creación
-        pass # TODO: implementar para una solicitud GET
+        # # Mostrar formulario de creación
+        # pass # TODO: implementar para una solicitud GET
+
+        #  Aquí iría la lógica para crear la tarea
+            return redirect(url_for('task_list'))
+
+        # Mostrar formulario de creación (debes tener task_form.html)
+        return render_template('task_form.html')
     
     
     @app.route('/tasks/<int:task_id>')
