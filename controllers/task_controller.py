@@ -9,7 +9,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime
 from models.task import Task
 from extensions import db
-import re 
+import re # Para trabajar con expresiones regulares o secuencia de caracteres que define un patrón de búsqueda en un texto.
 
 
 def register_routes(app):
@@ -174,28 +174,64 @@ def register_routes(app):
         Returns:
             str: HTML con los detalles de la tarea
         """
-        pass # TODO: implementar el método
+        
+        task = Task.query.get_or_404(task_id)
+        return render_template('task_detail.html', task=task)
+        
+        # pass # TODO: implementar el método
     
     
     @app.route('/tasks/<int:task_id>/edit', methods=['GET', 'POST'])
     def task_edit(task_id):
         """
         Edita una tarea existente
-        
-        Args:
-            task_id (int): ID de la tarea a editar
-        
+
         GET: Muestra el formulario de edición con datos actuales
         POST: Procesa los cambios y actualiza la tarea
-        
-        Returns:
-            str: HTML del formulario o redirección tras editar
         """
+        task = Task.query.get_or_404(task_id)
+
         if request.method == 'POST':
-            pass # TODO: implementar para una solicitud POST
-        
-        # Mostrar el formulario para editar la tarea
-        pass # TODO: implementar para una solicitud GET
+            # Leer campos del formulario (proteger contra None)
+            title = (request.form.get('title') or '').strip()
+            description = (request.form.get('description') or '').strip()
+            due_date_str = (request.form.get('due_date') or '').strip()
+            completed_val = request.form.get('completed')  # checkbox -> 'on' si está marcado
+            completed = True if completed_val in ('on', 'true', '1', 'yes') else False
+
+            # Validaciones básicas
+            if not title:
+                flash('El título es obligatorio.', 'error')
+                form = {'title': title, 'description': description, 'due_date': due_date_str, 'completed': completed}
+                return render_template('task_form.html', task=task, edit=True, form=form)
+
+            # Parsear fecha si fue proporcionada
+            due_date = _parse_due_date_flexible(due_date_str)
+            if due_date_str and due_date is None:
+                flash('Formato de fecha inválido. Use YYYY-MM-DD (o seleccione la fecha correctamente).', 'error')
+                form = {'title': title, 'description': description, 'due_date': due_date_str, 'completed': completed}
+                return render_template('task_form.html', task=task, edit=True, form=form)
+
+            # Aplicar cambios al objeto
+            task.title = title
+            task.description = description or None
+            task.due_date = due_date
+            task.completed = completed
+
+            try:
+                db.session.add(task)
+                db.session.commit()
+                flash('Tarea actualizada correctamente.', 'success')
+                return redirect(url_for('task_detail', task_id=task.id))
+            except Exception:
+                db.session.rollback()
+                flash('Ocurrió un error al actualizar la tarea. Intente nuevamente.', 'error')
+                form = {'title': title, 'description': description, 'due_date': due_date_str, 'completed': completed}
+                return render_template('task_form.html', task=task, edit=True, form=form)
+
+        # GET: Mostrar el formulario de edición
+        return render_template('task_form.html', task=task, edit=True)
+
     
     
     @app.route('/tasks/<int:task_id>/delete', methods=['POST'])
