@@ -3,10 +3,30 @@ Modelo Task - Representa una tarea en la base de datos
 
 Este archivo contiene la definición del modelo Task usando SQLAlchemy ORM.
 """
-
+from sqlalchemy import TypeDecorator
+from sqlalchemy import event
+from sqlalchemy.types import DateTime
 from datetime import datetime
 from extensions import db 
 
+class DateTimeWithoutMicroseconds(TypeDecorator):
+    """Tipo personalizado para almacenar fechas sin microsegundos"""
+    impl = db.String(26)  # Longitud suficiente para incluir microsegundos
+    
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            # Formatear como YYYY-MM-DD HH:MM:SS
+            return value.strftime('%Y-%m-%d %H:%M:%S')
+        return value
+    
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            # Manejar diferentes formatos
+            if '.' in value:  # Si tiene microsegundos
+                value = value.split('.')[0]
+            # Convertir string a datetime
+            return datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+        return value
 
 class Task(db.Model):
     """
@@ -21,9 +41,14 @@ class Task(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
-    due_date = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    due_date = db.Column(DateTimeWithoutMicroseconds(), nullable=True)
+    created_at = db.Column(DateTimeWithoutMicroseconds(), 
+                          default=lambda: datetime.utcnow().replace(microsecond=0),
+                          nullable=False)
+    updated_at = db.Column(DateTimeWithoutMicroseconds(), 
+                          default=lambda: datetime.utcnow().replace(microsecond=0),
+                          onupdate=lambda: datetime.utcnow().replace(microsecond=0),
+                          nullable=False)
     
     def __init__(self, title, description=None, due_date=None):
         """
@@ -168,3 +193,4 @@ class Task(db.Model):
     def delete(self):
         """Elimina la tarea de la base de datos"""
         pass # TODO: implementar el método
+

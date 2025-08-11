@@ -77,7 +77,7 @@ def register_routes(app):
         - 'YYYY-MM-DDTHH:MM' (datetime-local)
         - 'DD/MM/YYYY HH:MM a. m.' o 'dd/mm/yyyy hh:mm p. m.' (español)
         - 'DD/MM/YYYY' (solo fecha)
-        Devuelve datetime o None si no puede parsear.
+        Devuelve datetime (sin microsegundos) o None si no puede parsear.
         """
         if not date_str:
             return None
@@ -95,28 +95,37 @@ def register_routes(app):
             '%d/%m/%Y %I:%M %p',  # 11/08/2025 01:20 AM/PM
             '%d/%m/%Y',           # 11/08/2025
             '%Y-%m-%d %H:%M:%S',  # 2025-08-11 01:20:00
+            '%Y-%m-%d %H:%M:%S.%f',  # 2025-08-11 01:20:00.000000
         ]
+        
+        parsed_date = None
+        
+        # Primero intentar con formatos estándar
         for fmt in formats:
             try:
-                return datetime.strptime(s, fmt)
+                parsed_date = datetime.strptime(s, fmt)
+                break
             except ValueError:
                 continue
 
-        # Si ninguno funcionó, intentar parseo heurístico simple (hora al final con AM/PM)
-        # ej: "11/08/2025 1:20 AM" (sin cero a la izquierda en la hora)
-        m = re.match(r'(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)?', s, flags=re.IGNORECASE)
-        if m:
-            dd, mm, yyyy, hh, minute, ampm = m.groups()
-            hh = int(hh)
-            if ampm:
-                ampm = ampm.upper()
-                if ampm == 'PM' and hh < 12:
-                    hh += 12
-                if ampm == 'AM' and hh == 12:
-                    hh = 0
-            return datetime(int(yyyy), int(mm), int(dd), hh, int(minute))
-
-        # no pudo parsear
+        # Si no funcionó, intentar parseo heurístico
+        if not parsed_date:
+            m = re.match(r'(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)?', s, flags=re.IGNORECASE)
+            if m:
+                dd, mm, yyyy, hh, minute, ampm = m.groups()
+                hh = int(hh)
+                if ampm:
+                    ampm = ampm.upper()
+                    if ampm == 'PM' and hh < 12:
+                        hh += 12
+                    if ampm == 'AM' and hh == 12:
+                        hh = 0
+                parsed_date = datetime(int(yyyy), int(mm), int(dd), hh, int(minute))
+        
+        # Si se obtuvo una fecha válida, truncar microsegundos
+        if parsed_date:
+            return parsed_date.replace(microsecond=0)
+        
         return None
     
     
@@ -132,6 +141,10 @@ def register_routes(app):
             title = (request.form.get('title') or '').strip()
             description = (request.form.get('description') or '').strip()
             due_date_str = (request.form.get('due_date') or '').strip()
+            
+            # --- LEER EL CHECKBOX ---
+            completed_val = request.form.get('completed')  # si está marcado -> 'on' (o el valor que definas)
+            completed = True if completed_val in ('on', 'true', '1', 'yes') else False
 
             # Validaciones básicas
             if not title:
@@ -145,9 +158,15 @@ def register_routes(app):
                 flash('Formato de fecha inválido. Use YYYY-MM-DD (o seleccione la fecha correctamente).', 'error')
                 form = {'title': title, 'description': description, 'due_date': due_date_str}
                 return render_template('task_form.html', form=form)
-
-            # Crear objeto Task y persistir en la base de datos
+            
+            if due_date:
+                # Forzar truncamiento de microsegundos
+                due_date = due_date.replace(microsecond=0)
+                
+            # Crear objeto Task y asignar completed antes de guardar
             task = Task(title=title, description=description or None, due_date=due_date)
+            task.completed = completed 
+            
             try:
                 db.session.add(task)
                 db.session.commit()
@@ -210,6 +229,10 @@ def register_routes(app):
                 flash('Formato de fecha inválido. Use YYYY-MM-DD (o seleccione la fecha correctamente).', 'error')
                 form = {'title': title, 'description': description, 'due_date': due_date_str, 'completed': completed}
                 return render_template('task_form.html', task=task, edit=True, form=form)
+            
+            # Forzar truncamiento de microsegundos
+            if due_date:
+                due_date = due_date.replace(microsecond=0)  
 
             # Aplicar cambios al objeto
             task.title = title
