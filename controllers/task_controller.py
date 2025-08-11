@@ -143,7 +143,7 @@ def register_routes(app):
             due_date_str = (request.form.get('due_date') or '').strip()
             
             # --- LEER EL CHECKBOX ---
-            completed_val = request.form.get('completed')  # si está marcado -> 'on' (o el valor que definas)
+            completed_val = request.form.get('completed')  # si está marcado -> 'on'
             completed = True if completed_val in ('on', 'true', '1', 'yes') else False
 
             # Validaciones básicas
