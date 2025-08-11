@@ -177,8 +177,7 @@ def register_routes(app):
         
         task = Task.query.get_or_404(task_id)
         return render_template('task_detail.html', task=task)
-        
-        # pass # TODO: implementar el método
+
     
     
     @app.route('/tasks/<int:task_id>/edit', methods=['GET', 'POST'])
@@ -245,7 +244,28 @@ def register_routes(app):
         Returns:
             Response: Redirección a la lista de tareas
         """
-        pass # TODO: implementar el método
+        task = Task.query.get_or_404(task_id)
+
+        try:
+            db.session.delete(task)
+            db.session.commit()
+            mensaje = 'Tarea eliminada correctamente.'
+
+            # Si la petición es JSON/AJAX, devolver JSON útil
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': mensaje}), 200
+
+            flash(mensaje, 'success')
+        except Exception:
+            db.session.rollback()
+            mensaje = 'Ocurrió un error al eliminar la tarea. Intente nuevamente.'
+
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': mensaje}), 500
+
+            flash(mensaje, 'error')
+
+        return redirect(url_for('task_list'))
     
     
     @app.route('/tasks/<int:task_id>/toggle', methods=['POST'])
