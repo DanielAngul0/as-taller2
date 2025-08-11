@@ -4,12 +4,9 @@ Este archivo configura y ejecuta la aplicación Flask siguiendo el patrón MVC
 """
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from extensions import db 
 from config import config
 import os
-
-# Crear instancia de SQLAlchemy
-db = SQLAlchemy()
 
 
 def create_app(config_name=None):

@@ -5,7 +5,7 @@ Este archivo contiene la definición del modelo Task usando SQLAlchemy ORM.
 """
 
 from datetime import datetime
-from app import db
+from extensions import db 
 
 
 class Task(db.Model):
@@ -78,44 +78,49 @@ class Task(db.Model):
         pass # TODO: implementar el método
     
     @staticmethod
-    def get_all_tasks():
-        """
-        Obtiene todas las tareas de la base de datos
-        
-        Returns:
-            list: Lista de objetos Task
-        """
-        return Task.query.all()
-    
+    def get_all_tasks(order_by=None):
+        query = Task.query
+        if order_by == 'date':
+            query = query.order_by(Task.due_date.asc())
+        elif order_by == 'title':
+            query = query.order_by(Task.title.asc())
+        elif order_by == 'created':
+            query = query.order_by(Task.created_at.desc())
+        return query.all()  # Usar la consulta construida, no Task.query.all()
+
     @staticmethod
-    def get_pending_tasks():
-        """
-        Obtiene todas las tareas pendientes
-        
-        Returns:
-            list: Lista de tareas pendientes
-        """
-        pass # TODO: implementar el método
-    
+    def get_pending_tasks(order_by=None):
+        query = Task.query.filter_by(completed=False)
+        if order_by == 'date':
+            query = query.order_by(Task.due_date.asc())
+        elif order_by == 'title':
+            query = query.order_by(Task.title.asc())
+        elif order_by == 'created':
+            query = query.order_by(Task.created_at.desc())
+        return query.all()
+
     @staticmethod
-    def get_completed_tasks():
-        """
-        Obtiene todas las tareas completadas
-        
-        Returns:
-            list: Lista de tareas completadas
-        """
-        pass # TODO: implementar el método
-    
+    def get_completed_tasks(order_by=None):
+        query = Task.query.filter_by(completed=True)
+        if order_by == 'date':
+            query = query.order_by(Task.due_date.asc())
+        elif order_by == 'title':
+            query = query.order_by(Task.title.asc())
+        elif order_by == 'created':
+            query = query.order_by(Task.created_at.desc())
+        return query.all()
+
     @staticmethod
-    def get_overdue_tasks():
-        """
-        Obtiene todas las tareas vencidas
-        
-        Returns:
-            list: Lista de tareas vencidas
-        """
-        pass # TODO: implementar el método
+    def get_overdue_tasks(order_by=None):
+        now = datetime.utcnow()
+        query = Task.query.filter(Task.due_date < now, Task.completed == False)
+        if order_by == 'date':
+            query = query.order_by(Task.due_date.asc())
+        elif order_by == 'title':
+            query = query.order_by(Task.title.asc())
+        elif order_by == 'created':
+            query = query.order_by(Task.created_at.desc())
+        return query.all()
     
     def save(self):
         """Guarda la tarea en la base de datos"""
