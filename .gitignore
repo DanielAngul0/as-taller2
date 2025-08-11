@@ -208,3 +208,7 @@ __marimo__/
 
 # Ignorando el archivo de consulta SQL
 consulta.sql
+
+# Scripts de migración local
+migrate_dates.py
+
