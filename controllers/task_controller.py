@@ -71,7 +71,8 @@ def register_routes(app):
     
     def _parse_due_date_flexible(date_str):
         """
-        Intenta parsear diferentes formatos que puedes recibir:
+        Parseando diferentes formatos de fecha y hora.
+        Soporta:
         - 'YYYY-MM-DD'
         - 'YYYY-MM-DDTHH:MM' (datetime-local)
         - 'DD/MM/YYYY HH:MM a. m.' o 'dd/mm/yyyy hh:mm p. m.' (español)
