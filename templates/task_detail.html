@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalle de Tarea</title>
+</head>
+<body>
+    <h1>{{ task.title }}</h1>
+    <p><strong>Descripción:</strong> {{ task.description or "Sin descripción" }}</p>
+    <p><strong>Completada:</strong> {{ "Sí" if task.completed else "No" }}</p>
+    <p><strong>Fecha de vencimiento:</strong> {{ task.due_date or "No definida" }}</p>
+    <p><strong>Creada:</strong> {{ task.created_at }}</p>
+    <a href="{{ url_for('task_list') }}">Volver a la lista</a>
+</body>
+</html>
