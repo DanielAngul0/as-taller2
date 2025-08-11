@@ -122,8 +122,7 @@ def register_routes(app):
     @app.route('/tasks/new', methods=['GET', 'POST'])
     def task_create():
         """
-        Crea una nueva tarea
-
+        Creando una nueva tarea usando el metodo 'Get' y 'Post'
         GET: Muestra el formulario de creación
         POST: Procesa los datos del formulario y crea la tarea
         """
