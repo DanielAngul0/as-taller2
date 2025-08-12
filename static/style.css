@@ -143,14 +143,27 @@ main {
     text-align: center;
 }
 
-/* TODO: Estado completado */
-.task-completed .badge-status { }
+/* Estado completado */
+.task-completed .badge-status {
+    background-color: #28a745; /* Verde */
+    color: white;
+    border: 1px solid #218838;
+}
 
-/* TODO: Estado pendiente */
-.task-pending .badge-status { }
+/* Estado pendiente */
+.task-pending .badge-status {
+    background-color: #ffc107; /* Amarillo */
+    color: black;
+    border: 1px solid #e0a800;
+}
 
-/* TODO: Estado vencido */
-.task-overdue .badge-status { }
+/* Estado vencido */
+.task-overdue .badge-status {
+    background-color: #dc3545; /* Rojo */
+    color: white;
+    border: 1px solid #c82333;
+}
+
 
 .task-completed td {
     text-decoration: line-through;
