@@ -162,6 +162,15 @@ def register_routes(app):
             if due_date:
                 # Forzar truncamiento de microsegundos
                 due_date = due_date.replace(microsecond=0)
+            
+            # Validación adicional: no permitir fechas en el pasado
+            if due_date:
+                due_date = due_date.replace(microsecond=0)
+                now = datetime.utcnow().replace(microsecond=0)
+                if due_date < now:
+                    flash('La fecha de vencimiento no puede estar en el pasado.', 'error')
+                    form = {'title': title, 'description': description, 'due_date': due_date_str}
+                    return render_template('task_form.html', form=form)
                 
             # Crear objeto Task y asignar completed antes de guardar
             task = Task(title=title, description=description or None, due_date=due_date)
