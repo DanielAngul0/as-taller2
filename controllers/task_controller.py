@@ -312,26 +312,39 @@ def register_routes(app):
         Returns:
             Response: Redirección a la lista de tareas
         """
+        # Obtener la tarea por ID
         task = Task.query.get_or_404(task_id)
+        """
+        Cambiar el estado de completado
+        Si la tarea ya está completada, la marcamos como pendiente y viceversa
+        """
         try:
-            if getattr(task, 'completed', False):
-                # Usamos mark_pending (commit inside)
-                task.mark_pending()
-                mensaje = 'Tarea marcada como pendiente.'
-            else:
-                task.mark_completed()
-                mensaje = 'Tarea marcada como completada.'
-
-            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': True, 'message': mensaje, 'completed': task.completed}), 200
-
+            was_completed = task.completed
+            task.completed = not was_completed
+            db.session.commit()
+            
+            # Mensaje de éxito
+            mensaje = 'Tarea marcada como completada.' if task.completed else 'Tarea marcada como pendiente.'
+            
+            # Si la petición es JSON/AJAX, devolver JSON útil
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'completed': task.completed,
+                    'is_overdue': task.is_overdue() if not task.completed else False,
+                    'pending_count': len(Task.get_pending_tasks()),
+                    'completed_count': len(Task.get_completed_tasks())
+                }), 200
+                
             flash(mensaje, 'success')
-        except Exception:
+        except Exception as e:
             db.session.rollback()
-            msg = 'Error al cambiar el estado de la tarea.'
-            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': msg}), 500
-            flash(msg, 'error')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': False, 
+                    'message': f'Error: {str(e)}'
+                }), 500
+            flash('Error al cambiar estado', 'error')
         return redirect(url_for('task_list'))    
     
     # Rutas adicionales para versiones futuras
@@ -350,6 +363,8 @@ def register_routes(app):
             'tasks': [],
             'message': 'API en desarrollo - Implementar en versiones futuras'
         })
+    
+    
     
     
     @app.errorhandler(404)
