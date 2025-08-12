@@ -145,6 +145,20 @@
                 }
             });
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Validación bootstrap para formularios con novalidate
+            const forms = document.querySelectorAll('form[id="taskForm"]');
+            Array.prototype.slice.call(forms).forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        });
         
         // Confirmación para eliminaciones
         function confirmDelete(taskName) {
@@ -162,6 +176,29 @@
                 button.disabled = false;
             }, 2000);
         }
+
+        // Añadir clase 'submitting' al formulario para evitar doble envío
+        document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('taskForm');
+        if (!form) return;
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', function (e) {
+            // Si el formulario ya tiene la clase 'submitting', impedir doble envío
+            if (form.classList.contains('submitting')) {
+            e.preventDefault();
+            return;
+            }
+            // Añadir clase para marcar envío en curso y deshabilitar botón
+            form.classList.add('submitting');
+            if (submitBtn) {
+            submitBtn.disabled = true;
+            // opcional: cambiar texto / mostrar spinner
+            submitBtn.dataset.originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+            }
+        });
+        });
     </script>
     
     <!-- Bloque para JavaScript adicional -->
