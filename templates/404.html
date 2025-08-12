@@ -2,14 +2,34 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Página no encontrada</title>
+    <title>Error 404 - Página no encontrada</title>
+
+    <!-- Mantener el CSS global si quieres, se sobreescribe por 404.css -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Estilos específicos para la página 404 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='404.css') }}">
 </head>
-<body>
-    <div class="container" style="margin-top: 3rem;">
-        <h1>Error 404</h1>
-        <p>La página que buscas no existe.</p>
-        <a href="{{ url_for('task_list') }}">Volver al inicio</a>
-    </div>
+<body class="page-404">
+    <main class="err404-wrapper" role="main">
+        <div class="err404-card" role="article" aria-labelledby="err404-title">
+            <div class="err404-visual" aria-hidden="true">
+                <div class="err404-rocket">🚀</div>
+                <div class="err404-bubble">Oops!</div>
+            </div>
+
+            <div class="err404-content">
+                <h1 class="err404-code" id="err404-title">404</h1>
+                <h2 class="err404-title">Página no encontrada</h2>
+                <p class="err404-text">
+                    La búsqueda se ha perdido en el espacio...
+                </p>
+
+                <div class="err404-actions">
+                    <a class="btn btn-primary" href="{{ url_for('task_list') }}">🔙 Volver al inicio</a>
+                </div>
+            </div>
+        </div>
+    </main>
 </body>
 </html>
