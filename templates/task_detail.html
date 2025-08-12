@@ -13,14 +13,20 @@
         <!-- Tarjeta principal -->
         <div class="card task-detail-card shadow-lg">
             <!-- Header con estado -->
-            <div class="card-header bg-gradient-{{ 'success' if task.completed else 'warning' if task.is_overdue else 'primary' }}">
+            <div class="card-header bg-gradient-{{ 'success' if task.completed else 'warning' if task.is_overdue() else 'primary' }}">
                 <div class="d-flex justify-content-between align-items-center">
                     <h2 class="card-title mb-0">
                         <i class="fas fa-tasks me-2"></i>
                         {{ task.title }}
                     </h2>
                     <span class="badge bg-light text-dark fs-6">
-                        {{ "Completada" if task.completed else "Vencida" if task.is_overdue else "Pendiente" }}
+                        {% if task.completed %}
+                            Completada
+                        {% elif task.due_date and task.is_overdue() %}
+                            Vencida
+                        {% else %}
+                            Pendiente
+                        {% endif %}
                     </span>
                 </div>
             </div>
@@ -46,25 +52,17 @@
                                 <i class="fas fa-calendar-plus"></i>
                             </div>
                             <div class="info-content">
-                                <h6>Creación</h6>
-                                <p class="mb-0">{{ task.created_at.strftime('%d %b %Y - %H:%M') }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Fecha de vencimiento -->
-                    <div class="col-md-6 mb-3">
-                        <div class="task-info-card {{ 'bg-danger-light' if task.is_overdue and not task.completed }}">
-                            <div class="info-icon {{ 'bg-danger' if task.is_overdue and not task.completed else 'bg-warning' }}">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="info-content">
-                                <h6>Vencimiento</h6>
-                                <p class="mb-0">
+                                <!-- Fecha de creación -->
+                                <p><strong>Creación:</strong> 
+                                    {{ task.created_at.strftime('%d/%m/%Y a las %H:%M') }}
+                                </p>
+
+                                <!-- Fecha de vencimiento -->
+                                <p><strong>Vencimiento:</strong>
                                     {% if task.due_date %}
-                                        {{ task.due_date.strftime('%d %b %Y - %H:%M') }}
-                                        {% if task.is_overdue and not task.completed %}
-                                            <span class="badge bg-danger ms-2">Atrasada</span>
+                                        {{ task.due_date.strftime('%d/%m/%Y a las %H:%M') }}
+                                        {% if task.is_overdue() and not task.completed %}
+                                            <span class="badge bg-danger">Atrasada</span>
                                         {% endif %}
                                     {% else %}
                                         Sin fecha definida
