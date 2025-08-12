@@ -60,7 +60,7 @@
                     <div class="mb-3">
                         <label for="description" class="form-label">
                             <i class="fas fa-align-left me-1"></i>
-                            Descripción
+                            Descripción <span class="text-danger">*</span>
                         </label>
                         <textarea 
                             class="form-control" 
@@ -69,17 +69,20 @@
                             rows="4"
                             placeholder="Describe los detalles de la tarea..."
                             maxlength="1000"
+                            required
                         >{{ task.description if task else '' }}</textarea>
-                        <div class="form-text">
-                            Opcional. Máximo 1000 caracteres
-                        </div>
+                    <div class="invalid-feedback">
+                        Por favor, ingresa una descripción para la tarea (máx. 1000 caracteres).
+                    </div>
+                    <div class="form-text">
+                        Máximo 1000 caracteres
+                    </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="due_date" class="form-label">
                             <i class="fas fa-calendar-alt me-1"></i>
-                            Fecha de Vencimiento
-                        </label>
+                            Fecha de Vencimiento <span class="text-danger">*</span>                        </label>
                         <input 
                             type="datetime-local" 
                             class="form-control" 
@@ -87,9 +90,13 @@
                             name="due_date"
                             value="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task and task.due_date else '' }}"
                             min="{{ moment().strftime('%Y-%m-%dT%H:%M') if moment else '' }}"
+                            required
                         >
+                        <div class="invalid-feedback">
+                            Por favor, selecciona una fecha y hora de vencimiento válida (no puede ser de días anteriores).
+                        </div>
                         <div class="form-text">
-                            Opcional. Selecciona cuándo debe completarse la tarea
+                            Selecciona cuándo debe completarse la tarea
                         </div>
                     </div>
 
