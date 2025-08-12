@@ -51,7 +51,7 @@
                     <li class="nav-item">
                         <span class="navbar-text">
                             <i class="fas fa-code-branch me-1"></i>
-                            Versión 1.0
+                            Versión 2.0
                         </span>
                     </li>
                 </ul>
@@ -131,73 +131,95 @@
     
     <!-- Script personalizado -->
     <script>
-        // Funciones JavaScript comunes
-        
-        // Auto-hide alerts después de 5 segundos
+        // --- Comportamiento común en la UI: validación, mensajes y prevención de doble envío ---
         document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                if (!alert.classList.contains('alert-danger')) {
-                    setTimeout(function() {
-                        const bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
-                    }, 5000);
+            // Auto-hide alerts después de 5 segundos (excepto errores)
+            (function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    if (!alert.classList.contains('alert-danger')) {
+                        setTimeout(function() {
+                            const bsAlert = new bootstrap.Alert(alert);
+                            bsAlert.close();
+                        }, 5000);
+                    }
+                });
+            })();
+
+            // Confirmación para eliminaciones (función global)
+            window.confirmDelete = function(taskName) {
+                return confirm(`¿Estás seguro de que quieres eliminar la tarea "${taskName}"?`);
+            };
+
+            // Función helper para mostrar un loading temporal en cualquier botón
+            window.showLoading = function(button) {
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cargando...';
+                button.disabled = true;
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 2000);
+            };
+
+            // ---- Validación + prevención de doble envío para #taskForm ----
+            const form = document.getElementById('taskForm');
+            if (!form) return;
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            // Envío del formulario: controlar validación y marcar "submitting" solo si es válido
+            form.addEventListener('submit', function(event) {
+                // Ejecutar validación (bootstrap style)
+                if (!form.checkValidity()) {
+                    // Form inválido: evitar envío y mostrar errores
+                    event.preventDefault();
+                    event.stopPropagation();
+                    form.classList.add('was-validated');
+                    // Aseguramos que el botón NO quede bloqueado
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        if (submitBtn.dataset.originalText) submitBtn.innerHTML = submitBtn.dataset.originalText;
+                    }
+                    form.classList.remove('submitting');
+                    return;
+                }
+
+                // Si ya estamos enviando, bloquear nuevo envío
+                if (form.classList.contains('submitting')) {
+                    event.preventDefault();
+                    return;
+                }
+
+                // Form válido -> marcar submitting y deshabilitar botón
+                form.classList.add('submitting');
+                if (submitBtn) {
+                    // guardar texto original si no existe
+                    if (!submitBtn.dataset.originalText) submitBtn.dataset.originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+                    submitBtn.disabled = true;
+                }
+                // dejar que el envío prosiga naturalmente
+            });
+
+            // Si algún campo es inválido (evento 'invalid'), restaurar botón y estado
+            form.addEventListener('invalid', function(e) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitBtn.dataset.originalText) submitBtn.innerHTML = submitBtn.dataset.originalText;
+                }
+                form.classList.remove('submitting');
+            }, true); // capture para atrapar el evento en inputs internos
+
+            // Si el usuario escribe/modifica inputs, quitar submitting para permitir reintentos
+            form.addEventListener('input', function() {
+                if (form.classList.contains('submitting')) {
+                    form.classList.remove('submitting');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        if (submitBtn.dataset.originalText) submitBtn.innerHTML = submitBtn.dataset.originalText;
+                    }
                 }
             });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Validación bootstrap para formularios con novalidate
-            const forms = document.querySelectorAll('form[id="taskForm"]');
-            Array.prototype.slice.call(forms).forEach(function(form) {
-                form.addEventListener('submit', function(event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                }, false);
-            });
-        });
-        
-        // Confirmación para eliminaciones
-        function confirmDelete(taskName) {
-            return confirm(`¿Estás seguro de que quieres eliminar la tarea "${taskName}"?`);
-        }
-        
-        // Función para mostrar loading en botones
-        function showLoading(button) {
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cargando...';
-            button.disabled = true;
-            
-            setTimeout(function() {
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }, 2000);
-        }
-
-        // Añadir clase 'submitting' al formulario para evitar doble envío
-        document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('taskForm');
-        if (!form) return;
-        const submitBtn = form.querySelector('button[type="submit"]');
-
-        form.addEventListener('submit', function (e) {
-            // Si el formulario ya tiene la clase 'submitting', impedir doble envío
-            if (form.classList.contains('submitting')) {
-            e.preventDefault();
-            return;
-            }
-            // Añadir clase para marcar envío en curso y deshabilitar botón
-            form.classList.add('submitting');
-            if (submitBtn) {
-            submitBtn.disabled = true;
-            // opcional: cambiar texto / mostrar spinner
-            submitBtn.dataset.originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
-            }
-        });
         });
     </script>
     
