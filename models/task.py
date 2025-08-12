@@ -141,15 +141,37 @@ class Task(db.Model):
         return query.all()
 
     @staticmethod
+    def get_completed_tasks(order_by=None):
+        """
+        Obtiene todas las tareas completadas.
+        Permite ordenar los resultados por fecha de vencimiento, título o fecha de creación.
+        """
+        query = Task.query.filter_by(completed=True)
+
+        if order_by == 'date':
+            query = query.order_by(Task.due_date.asc())
+        elif order_by == 'title':
+            query = query.order_by(Task.title.asc())
+        elif order_by == 'created':
+            query = query.order_by(Task.created_at.desc())
+            
+        # Devuelve la lista de tareas completadas
+        return query.all()
+
+    @staticmethod
     def get_pending_tasks(order_by=None):
         """
         Obtiene todas las tareas pendientes (no completadas).
         Permite ordenar los resultados por fecha de vencimiento, título o fecha de creación.
-        """   
-        # Filtra únicamente las tareas que no están completadas
-        query = Task.query.filter_by(completed=False)
+        """
+        # Filtra las tareas pendientes (no completadas y no vencidas)  
+        now = datetime.utcnow()
+        query = Task.query.filter(
+            Task.completed == False,
+            (Task.due_date == None) | (Task.due_date >= now)
+        )
 
-        # Aplica el ordenamiento si se especifica
+        # Ordena las tareas según el criterio indicado
         if order_by == 'date':
             query = query.order_by(Task.due_date.asc())
         elif order_by == 'title':
@@ -160,46 +182,50 @@ class Task(db.Model):
         # Devuelve la lista de tareas pendientes
         return query.all()
 
-    @staticmethod
-    def get_completed_tasks(order_by=None):
-        """
-        Obtiene todas las tareas completadas.
-        Permite ordenar los resultados por fecha de vencimiento, título o fecha de creación.
-        """
-        # Filtra únicamente las tareas que están completadas
-        query = Task.query.filter_by(completed=True)
-
-        if order_by == 'date':
-            query = query.order_by(Task.due_date.asc())
-        elif order_by == 'title':
-            query = query.order_by(Task.title.asc())
-        elif order_by == 'created':
-            query = query.order_by(Task.created_at.desc())
-
-        # Devuelve la lista de tareas completadas
-        return query.all()
-
-    @staticmethod
     def get_overdue_tasks(order_by=None):
         """
         Obtiene todas las tareas vencidas que aún no están completadas.
         Permite ordenar los resultados por fecha de vencimiento, título o fecha de creación.
         """
-        # Obtiene la fecha y hora actual para comparar con la fecha de vencimiento
+        # Filtra las tareas vencidas (no completadas)
         now = datetime.utcnow()
+        query = Task.query.filter(
+            Task.completed == False,
+            Task.due_date < now
+        )
 
-        # Filtra las tareas cuyo vencimiento ya pasó y que no están completadas
-        query = Task.query.filter(Task.due_date < now, Task.completed == False)
-
+        # Ordena las tareas según el criterio indicado
         if order_by == 'date':
             query = query.order_by(Task.due_date.asc())
         elif order_by == 'title':
             query = query.order_by(Task.title.asc())
         elif order_by == 'created':
-            query = query.order_by(Task.created_at.desc())
-            
-        # Devuelve la lista de tareas vencidas
+            query = query.order_by(Task.created_at.desc())        
+        # Devuelve la lista de tareas vencidas    
         return query.all()
+    
+    @staticmethod
+    def get_pending_tasks_count():
+        """Cuenta las tareas pendientes (no completadas y no vencidas)"""
+        now = datetime.utcnow()
+        return Task.query.filter(
+            Task.completed == False,
+            (Task.due_date == None) | (Task.due_date >= now)
+        ).count()
+
+    @staticmethod
+    def get_overdue_tasks_count():
+        """Cuenta las tareas vencidas no completadas"""
+        now = datetime.utcnow()
+        return Task.query.filter(
+            Task.completed == False,
+            Task.due_date < now
+        ).count()
+
+    @staticmethod
+    def get_completed_tasks_count():
+        """Cuenta las tareas completadas"""
+        return Task.query.filter_by(completed=True).count()
 
     # Método para obtener una tarea por su ID
     def save(self):

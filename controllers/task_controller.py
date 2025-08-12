@@ -33,13 +33,6 @@ def register_routes(app):
     
     @app.route('/tasks')
     def task_list():
-        """
-        Muestra la lista de todas las tareas.
-
-        Query Parameters:
-            filter (str): 'all' | 'pending' | 'completed' | 'overdue'
-            sort (str): 'date' | 'title' | 'created'
-        """
         filter_type = request.args.get('filter', 'all')
         sort_by = request.args.get('sort', 'created')
 
@@ -47,16 +40,17 @@ def register_routes(app):
         if filter_type == 'pending':
             tasks = Task.get_pending_tasks(order_by=sort_by)
         elif filter_type == 'completed':
-            tasks = Task.get_completed_tasks(order_by=sort_by)
+            tasks = Task.get_completed_tasks(order_by=sort_by)  # Usar método corregido
         elif filter_type == 'overdue':
             tasks = Task.get_overdue_tasks(order_by=sort_by)
         else:
             tasks = Task.get_all_tasks(order_by=sort_by)
 
-        # Contadores
-        total = len(Task.get_all_tasks())
-        pending_count = len(Task.get_pending_tasks())
-        completed_count = len(Task.get_completed_tasks())
+        # Contadores actualizados
+        total = Task.query.count()
+        pending_count = Task.get_pending_tasks_count()
+        completed_count = Task.get_completed_tasks_count()
+        overdue_count = Task.get_overdue_tasks_count()
 
         context = {
             'tasks': tasks,
