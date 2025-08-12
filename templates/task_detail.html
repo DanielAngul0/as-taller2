@@ -1,15 +1,205 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Detalle de Tarea</title>
-</head>
-<body>
-    <h1>{{ task.title }}</h1>
-    <p><strong>Descripción:</strong> {{ task.description or "Sin descripción" }}</p>
-    <p><strong>Completada:</strong> {{ "Sí" if task.completed else "No" }}</p>
-    <p><strong>Fecha de vencimiento:</strong> {{ task.due_date or "No definida" }}</p>
-    <p><strong>Creada:</strong> {{ task.created_at }}</p>
-    <a href="{{ url_for('task_list') }}">Volver a la lista</a>
-</body>
-</html>
+{% extends 'layout.html' %}
+
+{% block title %}Detalle de Tarea - {{ task.title }}{% endblock %}
+
+{% block breadcrumb %}
+    {{ super() }}
+    <li class="breadcrumb-item active">Detalle de Tarea</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Tarjeta principal -->
+        <div class="card task-detail-card shadow-lg">
+            <!-- Header con estado -->
+            <div class="card-header bg-gradient-{{ 'success' if task.completed else 'warning' if task.is_overdue else 'primary' }}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2"></i>
+                        {{ task.title }}
+                    </h2>
+                    <span class="badge bg-light text-dark fs-6">
+                        {{ "Completada" if task.completed else "Vencida" if task.is_overdue else "Pendiente" }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Cuerpo con detalles -->
+            <div class="card-body">
+                <!-- Descripción -->
+                <div class="task-section mb-4">
+                    <h5 class="section-title text-muted mb-3">
+                        <i class="fas fa-align-left me-2"></i>Descripción
+                    </h5>
+                    <div class="task-description bg-light p-3 rounded">
+                        {{ task.description or "Esta tarea no tiene descripción" }}
+                    </div>
+                </div>
+                
+                <!-- Información temporal -->
+                <div class="row">
+                    <!-- Fecha de creación -->
+                    <div class="col-md-6 mb-3">
+                        <div class="task-info-card">
+                            <div class="info-icon bg-info">
+                                <i class="fas fa-calendar-plus"></i>
+                            </div>
+                            <div class="info-content">
+                                <h6>Creación</h6>
+                                <p class="mb-0">{{ task.created_at.strftime('%d %b %Y - %H:%M') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Fecha de vencimiento -->
+                    <div class="col-md-6 mb-3">
+                        <div class="task-info-card {{ 'bg-danger-light' if task.is_overdue and not task.completed }}">
+                            <div class="info-icon {{ 'bg-danger' if task.is_overdue and not task.completed else 'bg-warning' }}">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="info-content">
+                                <h6>Vencimiento</h6>
+                                <p class="mb-0">
+                                    {% if task.due_date %}
+                                        {{ task.due_date.strftime('%d %b %Y - %H:%M') }}
+                                        {% if task.is_overdue and not task.completed %}
+                                            <span class="badge bg-danger ms-2">Atrasada</span>
+                                        {% endif %}
+                                    {% else %}
+                                        Sin fecha definida
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estado -->
+                <div class="task-section">
+                    <h5 class="section-title text-muted mb-3">
+                        <i class="fas fa-clipboard-check me-2"></i>Estado
+                    </h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="completedSwitch" 
+                               {{ 'checked' if task.completed else '' }}
+                               disabled>
+                        <label class="form-check-label fw-bold {{ 'text-success' if task.completed else 'text-warning' }}" 
+                               for="completedSwitch">
+                            {{ "Tarea completada" if task.completed else "Tarea pendiente" }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer con acciones -->
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('task_list') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al listado
+                    </a>
+                    <div>
+                        <a href="{{ url_for('task_edit', task_id=task.id) }}" class="btn btn-primary me-2">
+                            <i class="fas fa-edit me-2"></i>Editar
+                        </a>
+                        <form action="{{ url_for('task_delete', task_id=task.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-danger" 
+                                    onclick="return confirm('¿Estás seguro de eliminar esta tarea?')">
+                                <i class="fas fa-trash-alt me-2"></i>Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos para la página de detalle */
+    .task-detail-card {
+        border-radius: 12px;
+        overflow: hidden;
+        border: none;
+        margin-bottom: 2rem;
+    }
+    
+    .task-detail-card .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .task-description {
+        min-height: 100px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+    
+    .task-section {
+        padding: 1rem 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+    
+    .task-section:last-child {
+        border-bottom: none;
+    }
+    
+    .section-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .task-info-card {
+        display: flex;
+        align-items: center;
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        height: 100%;
+        border: 1px solid #e9ecef;
+    }
+    
+    .info-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .info-content h6 {
+        color: #6c757d;
+        margin-bottom: 5px;
+        font-size: 0.85rem;
+    }
+    
+    .info-content p {
+        margin-bottom: 0;
+        font-weight: 500;
+    }
+    
+    .bg-danger-light {
+        background-color: rgba(220,53,69,0.05) !important;
+        border-color: rgba(220,53,69,0.1) !important;
+    }
+    
+    .form-switch {
+        padding-left: 3.5em;
+    }
+    
+    .form-switch .form-check-input {
+        width: 3em;
+        height: 1.5em;
+    }
+</style>
+{% endblock %}
