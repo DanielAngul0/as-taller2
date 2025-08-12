@@ -352,16 +352,39 @@ def register_routes(app):
     @app.route('/api/tasks', methods=['GET'])
     def api_tasks():
         """
-        API endpoint para obtener tareas en formato JSON
-        (Para versiones futuras con JavaScript)
+        Endpoint API para obtener todas las tareas en formato JSON
+        
+        Query Parameters:
+            filter (str): 'all' | 'pending' | 'completed' | 'overdue'
+            sort (str): 'date' | 'title' | 'created'
         
         Returns:
-            json: Lista de tareas en formato JSON
+            json: Lista de tareas con estructura completa
         """
-        # TODO: para versiones futuras
+        # Obtener parámetros de consulta
+        filter_type = request.args.get('filter', 'all')
+        sort_by = request.args.get('sort', 'created')
+        
+        # Obtener tareas según filtro
+        if filter_type == 'pending':
+            tasks = Task.get_pending_tasks(order_by=sort_by)
+        elif filter_type == 'completed':
+            tasks = Task.get_completed_tasks(order_by=sort_by)
+        elif filter_type == 'overdue':
+            tasks = Task.get_overdue_tasks(order_by=sort_by)
+        else:
+            tasks = Task.get_all_tasks(order_by=sort_by)
+        
+        # Convertir tareas a formato JSON
+        tasks_json = [task.to_dict() for task in tasks]
+        
+        # Devolver respuesta JSON
         return jsonify({
-            'tasks': [],
-            'message': 'API en desarrollo - Implementar en versiones futuras'
+            'success': True,
+            'count': len(tasks_json),
+            'tasks': tasks_json,
+            'filter': filter_type,
+            'sort': sort_by
         })
     
     
