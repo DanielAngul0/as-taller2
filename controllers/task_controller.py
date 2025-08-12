@@ -302,8 +302,27 @@ def register_routes(app):
         Returns:
             Response: Redirección a la lista de tareas
         """
-        pass # TODO: implementar el método
-    
+        task = Task.query.get_or_404(task_id)
+        try:
+            if getattr(task, 'completed', False):
+                # Usamos mark_pending (commit inside)
+                task.mark_pending()
+                mensaje = 'Tarea marcada como pendiente.'
+            else:
+                task.mark_completed()
+                mensaje = 'Tarea marcada como completada.'
+
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': mensaje, 'completed': task.completed}), 200
+
+            flash(mensaje, 'success')
+        except Exception:
+            db.session.rollback()
+            msg = 'Error al cambiar el estado de la tarea.'
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': msg}), 500
+            flash(msg, 'error')
+        return redirect(url_for('task_list'))    
     
     # Rutas adicionales para versiones futuras
     
