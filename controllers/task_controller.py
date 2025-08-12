@@ -162,13 +162,14 @@ def register_routes(app):
             if due_date:
                 # Forzar truncamiento de microsegundos
                 due_date = due_date.replace(microsecond=0)
-            
-            # Validación adicional: no permitir fechas en el pasado
-            if due_date:
-                due_date = due_date.replace(microsecond=0)
-                now = datetime.utcnow().replace(microsecond=0)
-                if due_date < now:
-                    flash('La fecha de vencimiento no puede estar en el pasado.', 'error')
+
+                # Validación: no permitir fechas de días anteriores.
+                # Permitimos cualquier fecha cuyo día sea el de hoy (incluso si la hora ya pasó).
+                from datetime import datetime
+                # ...
+                now = datetime.now().replace(microsecond=0)
+                if due_date.date() < now.date():
+                    flash('La fecha de vencimiento no puede ser de días anteriores. Si quieres usar hoy, selecciona la fecha de hoy.', 'error')
                     form = {'title': title, 'description': description, 'due_date': due_date_str}
                     return render_template('task_form.html', form=form)
                 
