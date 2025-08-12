@@ -92,15 +92,31 @@ class Task(db.Model):
         Returns:
             bool: True si la tarea está vencida, False en caso contrario
         """
-        pass # TODO: implementar el método
+        # Si no hay fecha de vencimiento, no puede estar vencida
+        if not self.due_date:
+            return False
+
+        # Si ya está completada, no considerarla vencida
+        if self.completed:
+            return False
+
+        now = datetime.utcnow().replace(microsecond=0)
+        # Ambas son datetimes naive en UTC, compararlas directamente
+        return self.due_date < now
     
-    def mark_completed(self):
+    def mark_completed(self, commit=True):
         """Marca la tarea como completada"""
-        pass # TODO: implementar el método
+        self.completed = True
+        self.updated_at = datetime.utcnow().replace(microsecond=0)
+        if commit:
+            self.save()
     
-    def mark_pending(self):
+    def mark_pending(self, commit=True):
         """Marca la tarea como pendiente"""
-        pass # TODO: implementar el método
+        self.completed = False
+        self.updated_at = datetime.utcnow().replace(microsecond=0)
+        if commit:
+            self.save()
     
     @staticmethod
     def get_all_tasks(order_by=None):
@@ -185,12 +201,22 @@ class Task(db.Model):
         # Devuelve la lista de tareas vencidas
         return query.all()
 
-    
+    # Método para obtener una tarea por su ID
     def save(self):
-        """Guarda la tarea en la base de datos"""
-        pass # TODO: implementar el método
+        try:
+            self.updated_at = datetime.utcnow().replace(microsecond=0)
+            db.session.add(self)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
     
+    # Método para eliminar una tarea
     def delete(self):
-        """Elimina la tarea de la base de datos"""
-        pass # TODO: implementar el método
+        try:
+            db.session.delete(self)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
 
