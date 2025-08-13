@@ -30,7 +30,7 @@ Este proyecto proporciona una plantilla para la implementación de una aplicaci�
 
 ```
 as-taller2/
-├── .gitignore             # Archivos a ignorar en Git
+├── .gitignore              # Archivos a ignorar en Git
 ├── app.py                  # Punto de entrada y configuración
 ├── config.py               # Configuración de Flask y SQLAlchemy
 ├── models/                 # Modelo (clases SQLAlchemy)
@@ -42,11 +42,14 @@ as-taller2/
 ├── templates/              # Vistas (HTML con Jinja2)
 │   ├── layout.html         # Base común
 │   ├── task_list.html      # Lista de tareas
-│   └── task_form.html      # Formulario de crear/editar
+│   ├── task_form.html      # Formulario de crear/editar
+│   ├── task_detail.html    # Interfaz de detalles de tareas (Solo las que se editen)
+│   └── 404.html            # Interfaz de pagina no encontrada
 ├── static/                 # Archivos estáticos (CSS, JS, imágenes)
-│   └── style.css
+│   └── style.css           # Hoja de estilos
+├── extensions.py           # Crean y centraliza las instancias de las extensiones de Flask
 ├── requirements.txt        # Dependencias del proyecto
-└── README.md              # Este archivo
+└── README.md               # Este archivo
 ```
 
 ## Instalación
