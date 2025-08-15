@@ -109,8 +109,8 @@
                                 class="form-control" 
                                 id="due_date" 
                                 name="due_date"
-                                value="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task and task.due_date else '' }}"
-                                min="{{ moment().strftime('%Y-%m-%dT%H:%M') if moment else '' }}"
+                                value="{{ task.due_date.astimezone(LOCAL_TZ).strftime('%Y-%m-%dT%H:%M') if task and task.due_date else '' }}"
+                                {% if not task %}min="{{ now_local.strftime('%Y-%m-%dT%H:%M') if now_local else '' }}"{% endif %}
                                 required
                             >
                         </div>
@@ -194,7 +194,7 @@
                             <div>
                                 <small class="text-muted d-block">Fecha de creación</small>
                                 <span class="fw-medium">
-                                    {{ task.created_at.strftime('%d/%m/%Y a las %H:%M') }}
+                                    {{ task.created_at.astimezone(LOCAL_TZ).strftime('%d/%m/%Y a las %I:%M %p') }}
                                 </span>
                             </div>
                         </div>
@@ -207,7 +207,7 @@
                             <div>
                                 <small class="text-muted d-block">Última modificación</small>
                                 <span class="fw-medium">
-                                    {{ task.updated_at.strftime('%d/%m/%Y a las %H:%M') }}
+                                    {{ task.updated_at.astimezone(LOCAL_TZ).strftime('%d/%m/%Y a las %I:%M %p') }}
                                 </span>
                             </div>
                         </div>
@@ -354,31 +354,53 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Manejo de envío del formulario
     form.addEventListener('submit', function(e) {
+        // Primero usar la validación nativa HTML5 para detectar formatos inválidos
+        if (!form.checkValidity()) {
+            // Evitar envío y mostrar errores nativos
+            e.preventDefault();
+            e.stopPropagation();
+            form.classList.add('was-validated');
+            // Mostrar mensajes de validación nativa (algunas veces reportValidity es útil)
+            try { form.reportValidity(); } catch (err) {}
+            // Enfocar el primer control inválido
+            const firstInvalid = form.querySelector(':invalid');
+            if (firstInvalid) firstInvalid.focus();
+            return;
+        }
+
+        // Validación simple de campos requeridos (mantener la lógica anterior)
         let isValid = true;
-        
-        // Validar todos los campos requeridos
         form.querySelectorAll('[required]').forEach(input => {
             if (!input.value.trim()) {
                 input.classList.add('is-invalid');
                 isValid = false;
             }
         });
-        
+
         if (!isValid) {
             e.preventDefault();
             e.stopPropagation();
             form.classList.add('was-validated');
-            
-            // Mostrar mensaje de error
             const firstInvalid = form.querySelector('.is-invalid');
-            if (firstInvalid) {
-                firstInvalid.focus();
-            }
-        } else {
-            // Mostrar spinner durante el envío
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
-            submitBtn.disabled = true;
+            if (firstInvalid) firstInvalid.focus();
+            return;
         }
+
+        // Llegamos aquí: el formulario pasa la validación -> activar spinner
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        submitBtn.disabled = true;
+
+        // Failsafe: reactivar si no hay navegación en 15s
+        const failSafe = setTimeout(() => {
+            if (submitBtn.disabled) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Reintentar';
+                alert('La solicitud está tardando demasiado. Si no se completó, inténtalo de nuevo.');
+            }
+        }, 15000);
+
+        // Si la página se va a recargar / navegar, limpiar el timeout
+        window.addEventListener('beforeunload', () => clearTimeout(failSafe));
     });
     
     // Efecto especial para campos con foco

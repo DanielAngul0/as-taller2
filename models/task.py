@@ -7,26 +7,80 @@ from sqlalchemy import TypeDecorator
 from sqlalchemy import event
 from sqlalchemy.types import DateTime
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from extensions import db 
 
 class DateTimeWithoutMicroseconds(TypeDecorator):
     """Tipo personalizado para almacenar fechas sin microsegundos"""
     impl = db.String(26)  # Longitud suficiente para incluir microsegundos
     
+# Zona local usada para interpretar/normalizar fechas
+LOCAL_TZ = ZoneInfo('America/Chicago')
+
+class DateTimeWithoutMicroseconds(TypeDecorator):
+    """Tipo personalizado para almacenar fechas en ISO (sin microsegundos) y con zona."""
+    impl = db.String(40)  # suficiente para 'YYYY-MM-DDTHH:MM:SS+HH:MM'
+    
     def process_bind_param(self, value, dialect):
-        if value is not None:
-            # Formatear como YYYY-MM-DD HH:MM:SS
-            return value.strftime('%Y-%m-%d %H:%M:%S')
-        return value
+        """
+        Acepta datetime y str:
+        - Si es datetime: normaliza a zona local (LOCAL_TZ) y devuelve string 'YYYY-MM-DD HH:MM:SS'
+        - Si es str: intenta parsear ISO o formato legacy y devuelve string normalizado
+        - Si es None devuelve None
+        """
+        if value is None:
+            return None
+
+        # Si ya es string, intentar parsearlo a datetime y normalizar
+        if isinstance(value, str):
+            try:
+                # Intento parsear ISO primero (soporta offsets)
+                dt = datetime.fromisoformat(value)
+            except Exception:
+                # Compatibilidad con formato legacy "YYYY-MM-DD HH:MM:SS" (sin microsegundos)
+                try:
+                    s = value
+                    if '.' in s:
+                        s = s.split('.')[0]
+                    dt = datetime.strptime(s, '%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    # Si no se puede parsear, devolver tal cual (fallback)
+                    return value
+            # Si dt no tiene tz, asumimos LOCAL_TZ; luego normalizamos y devolvemos string
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=LOCAL_TZ)
+            dt = dt.astimezone(LOCAL_TZ).replace(microsecond=0)
+            return dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Si es datetime: asegurarse tz-aware (asumir LOCAL_TZ si es naive) y formatear
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=LOCAL_TZ)
+            v = value.astimezone(LOCAL_TZ).replace(microsecond=0)
+            return v.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Fallback: convertir a str
+        try:
+            return str(value)
+        except Exception:
+            return None
     
     def process_result_value(self, value, dialect):
-        if value is not None:
-            # Manejar diferentes formatos
-            if '.' in value:  # Si tiene microsegundos
+        if value is None:
+            return None
+        # Manejar diferentes formatos guardados; devolver datetime con tz LOCAL_TZ
+        try:
+            # Intentar ISO (aunque guardamos legacy, esto hace la función robusta)
+            dt = datetime.fromisoformat(value)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=LOCAL_TZ)
+            return dt
+        except Exception:
+            # Formato legacy "YYYY-MM-DD HH:MM:SS"
+            if '.' in value:
                 value = value.split('.')[0]
-            # Convertir string a datetime
-            return datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
-        return value
+            dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            return dt.replace(tzinfo=LOCAL_TZ)
 
 class Task(db.Model):
     """
@@ -43,11 +97,11 @@ class Task(db.Model):
     completed = db.Column(db.Boolean, default=False, nullable=False)
     due_date = db.Column(DateTimeWithoutMicroseconds(), nullable=True)
     created_at = db.Column(DateTimeWithoutMicroseconds(), 
-                          default=lambda: datetime.utcnow().replace(microsecond=0),
+                          default=lambda: datetime.now(LOCAL_TZ).replace(microsecond=0),
                           nullable=False)
     updated_at = db.Column(DateTimeWithoutMicroseconds(), 
-                          default=lambda: datetime.utcnow().replace(microsecond=0),
-                          onupdate=lambda: datetime.utcnow().replace(microsecond=0),
+                          default=lambda: datetime.now(LOCAL_TZ).replace(microsecond=0),
+                          onupdate=lambda: datetime.now(LOCAL_TZ).replace(microsecond=0),
                           nullable=False)
     
     def __init__(self, title, description=None, due_date=None):
@@ -100,9 +154,12 @@ class Task(db.Model):
         if self.completed:
             return False
 
-        now = datetime.utcnow().replace(microsecond=0)
-        # Ambas son datetimes naive en UTC, compararlas directamente
-        return self.due_date < now
+        now = datetime.now(LOCAL_TZ).replace(microsecond=0)
+        due = self.due_date
+        # Asegurar que due tiene tzinfo
+        if due is not None and due.tzinfo is None:
+            due = due.replace(tzinfo=LOCAL_TZ)
+        return due < now
     
     def mark_completed(self, commit=True):
         """Marca la tarea como completada"""
@@ -165,7 +222,7 @@ class Task(db.Model):
         Permite ordenar los resultados por fecha de vencimiento, título o fecha de creación.
         """
         # Filtra las tareas pendientes (no completadas y no vencidas)  
-        now = datetime.utcnow()
+        now = datetime.now(LOCAL_TZ)
         query = Task.query.filter(
             Task.completed == False,
             (Task.due_date == None) | (Task.due_date >= now)
@@ -188,7 +245,7 @@ class Task(db.Model):
         Permite ordenar los resultados por fecha de vencimiento, título o fecha de creación.
         """
         # Filtra las tareas vencidas (no completadas)
-        now = datetime.utcnow()
+        now = datetime.now(LOCAL_TZ)
         query = Task.query.filter(
             Task.completed == False,
             Task.due_date < now
@@ -207,7 +264,7 @@ class Task(db.Model):
     @staticmethod
     def get_pending_tasks_count():
         """Cuenta las tareas pendientes (no completadas y no vencidas)"""
-        now = datetime.utcnow()
+        now = datetime.now(LOCAL_TZ)
         return Task.query.filter(
             Task.completed == False,
             (Task.due_date == None) | (Task.due_date >= now)
@@ -216,7 +273,7 @@ class Task(db.Model):
     @staticmethod
     def get_overdue_tasks_count():
         """Cuenta las tareas vencidas no completadas"""
-        now = datetime.utcnow()
+        now = datetime.now(LOCAL_TZ)
         return Task.query.filter(
             Task.completed == False,
             Task.due_date < now

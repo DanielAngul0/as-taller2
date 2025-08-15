@@ -54,13 +54,13 @@
                             <div class="info-content">
                                 <!-- Fecha de creación -->
                                 <p><strong>Creación:</strong> 
-                                    {{ task.created_at.strftime('%d/%m/%Y a las %H:%M') }}
+                                    {{ task.created_at.astimezone(LOCAL_TZ).strftime('%d/%m/%Y a las %I:%M %p') }}
                                 </p>
 
                                 <!-- Fecha de vencimiento -->
                                 <p><strong>Vencimiento:</strong>
                                     {% if task.due_date %}
-                                        {{ task.due_date.strftime('%d/%m/%Y a las %H:%M') }}
+                                        {{ task.due_date.astimezone(LOCAL_TZ).strftime('%d/%m/%Y a las %I:%M %p') }}
                                         {% if task.is_overdue() and not task.completed %}
                                             <span class="badge bg-danger">Atrasada</span>
                                         {% endif %}

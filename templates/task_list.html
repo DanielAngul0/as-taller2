@@ -201,14 +201,14 @@
                                             <small class="text-muted">
                                                 <i class="fas fa-calendar-day me-1"></i>
                                                 <strong>Vence:</strong> 
-                                                {{ task.due_date.strftime('%d/%m/%Y %H:%M') if task.due_date else 'Sin fecha' }}
+                                                {{ task.due_date.astimezone(LOCAL_TZ).strftime('%d/%m/%Y %I:%M %p') if task.due_date else 'Sin fecha' }}
                                             </small>
                                         </div>
                                         <div>
                                             <small class="text-muted">
                                                 <i class="fas fa-calendar-plus me-1"></i>
                                                 <strong>Creada:</strong> 
-                                                {{ task.created_at.strftime('%d/%m/%Y') }}
+                                                {{ task.created_at.astimezone(LOCAL_TZ).strftime('%d/%m/%Y %I:%M %p') }}
                                             </small>
                                         </div>
                                     </div>

@@ -7,6 +7,7 @@ Representa la capa "Controlador" en la arquitectura MVC.
 
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime
+from models.task import Task, LOCAL_TZ
 from models.task import Task
 from extensions import db
 import re # Para trabajar con expresiones regulares o secuencia de caracteres que define un patrón de búsqueda en un texto.
@@ -60,6 +61,11 @@ def register_routes(app):
             'pending_count': pending_count,
             'completed_count': completed_count
         }
+        # Añadimos la zona local y la hora local actual al contexto de la plantilla
+        context.update({
+            'LOCAL_TZ': LOCAL_TZ,
+            'now_local': datetime.now(LOCAL_TZ).replace(microsecond=0)
+        })
         return render_template('task_list.html', **context)
  
     
@@ -116,9 +122,9 @@ def register_routes(app):
                         hh = 0
                 parsed_date = datetime(int(yyyy), int(mm), int(dd), hh, int(minute))
         
-        # Si se obtuvo una fecha válida, truncar microsegundos
+        # Si se obtuvo una fecha válida, truncar microsegundos y adjuntar zona local
         if parsed_date:
-            return parsed_date.replace(microsecond=0)
+            return parsed_date.replace(microsecond=0, tzinfo=LOCAL_TZ)
         
         return None
     
@@ -151,7 +157,7 @@ def register_routes(app):
             if due_date_str and due_date is None:
                 flash('Formato de fecha inválido. Use YYYY-MM-DD (o seleccione la fecha correctamente).', 'error')
                 form = {'title': title, 'description': description, 'due_date': due_date_str}
-                return render_template('task_form.html', form=form)
+                return render_template('task_form.html', form=form, LOCAL_TZ=LOCAL_TZ, now_local=datetime.now(LOCAL_TZ))
             
             if due_date:
                 # Forzar truncamiento de microsegundos
@@ -159,13 +165,12 @@ def register_routes(app):
 
                 # Validación: no permitir fechas de días anteriores.
                 # Permitimos cualquier fecha cuyo día sea el de hoy (incluso si la hora ya pasó).
-                from datetime import datetime
-                # ...
-                now = datetime.now().replace(microsecond=0)
+                # Usar hora local para validación
+                now = datetime.now(LOCAL_TZ).replace(microsecond=0)
                 if due_date.date() < now.date():
                     flash('La fecha de vencimiento no puede ser de días anteriores. Si quieres usar hoy, selecciona la fecha de hoy.', 'error')
                     form = {'title': title, 'description': description, 'due_date': due_date_str}
-                    return render_template('task_form.html', form=form)
+                    return render_template('task_form.html', form=form, LOCAL_TZ=LOCAL_TZ, now_local=now)
                 
             # Crear objeto Task y asignar completed antes de guardar
             task = Task(title=title, description=description or None, due_date=due_date)
@@ -180,10 +185,11 @@ def register_routes(app):
                 db.session.rollback()
                 flash('Ocurrió un error al crear la tarea. Intente nuevamente.', 'error')
                 form = {'title': title, 'description': description, 'due_date': due_date_str}
-                return render_template('task_form.html', form=form)
+                return render_template('task_form.html', form=form, LOCAL_TZ=LOCAL_TZ, now_local=datetime.now(LOCAL_TZ))
+ 
 
         # GET -> Mostrar formulario vacío
-        return render_template('task_form.html')
+        return render_template('task_form.html', LOCAL_TZ=LOCAL_TZ, now_local=datetime.now(LOCAL_TZ))
     
     
     @app.route('/tasks/<int:task_id>')
@@ -199,7 +205,7 @@ def register_routes(app):
         """
         
         task = Task.query.get_or_404(task_id)
-        return render_template('task_detail.html', task=task)
+        return render_template('task_detail.html', task=task, LOCAL_TZ=LOCAL_TZ)
 
     
     
@@ -232,7 +238,7 @@ def register_routes(app):
             if due_date_str and due_date is None:
                 flash('Formato de fecha inválido. Use YYYY-MM-DD (o seleccione la fecha correctamente).', 'error')
                 form = {'title': title, 'description': description, 'due_date': due_date_str, 'completed': completed}
-                return render_template('task_form.html', task=task, edit=True, form=form)
+                return render_template('task_form.html', task=task, edit=True, form=form, LOCAL_TZ=LOCAL_TZ, now_local=datetime.now(LOCAL_TZ))
             
             # Forzar truncamiento de microsegundos
             if due_date:
@@ -253,10 +259,10 @@ def register_routes(app):
                 db.session.rollback()
                 flash('Ocurrió un error al actualizar la tarea. Intente nuevamente.', 'error')
                 form = {'title': title, 'description': description, 'due_date': due_date_str, 'completed': completed}
-                return render_template('task_form.html', task=task, edit=True, form=form)
+                return render_template('task_form.html', task=task, edit=True, form=form, LOCAL_TZ=LOCAL_TZ, now_local=datetime.now(LOCAL_TZ))
 
         # GET: Mostrar el formulario de edición
-        return render_template('task_form.html', task=task, edit=True)
+        return render_template('task_form.html', task=task, edit=True, LOCAL_TZ=LOCAL_TZ, now_local=datetime.now(LOCAL_TZ))
 
     
     
