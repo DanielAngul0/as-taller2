@@ -368,15 +368,6 @@
 <script>
 // JavaScript mejorado para la lista de tareas
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-submit del formulario de filtros cuando cambian los selectores
-    const filterSelect = document.getElementById('filter');
-    const sortSelect = document.getElementById('sort');
-    
-    [filterSelect, sortSelect].forEach(function(select) {
-        select.addEventListener('change', function() {
-            this.form.submit();
-        });
-    });
 
     // Toggle de estado con animación y actualización parcial
     document.querySelectorAll('.toggle-form').forEach(function(form) {
